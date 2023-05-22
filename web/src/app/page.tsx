@@ -1,112 +1,70 @@
-import { User } from 'lucide-react'
-import nlwLogo from '../assets/nlw-spacetime-logo.svg'
+import { EmptyMemories } from '@/components/EmptyMemories'
+import { api } from '@/lib/api'
+import { cookies } from 'next/headers'
+import dayjs from 'dayjs'
+import ptBR from 'dayjs/locale/pt-br'
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 
-export default function Home() {
+dayjs.locale(ptBR)
+
+interface Memory {
+  id: string
+  coverUrl: string
+  excerpt: string
+  createdAt: string
+}
+
+export default async function Home() {
+  const isAuthenticated = cookies().has('token')
+
+  if (!isAuthenticated) {
+    return <EmptyMemories />
+  }
+
+  const token = cookies().get('token')?.value
+
+  const response = await api.get('/memories', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const memories: Memory[] = response.data
+
+  if (memories.length === 0) {
+    return <EmptyMemories />
+  }
+
   return (
-    <main className="grid grid-cols-2 min-h-screen">
-      {/* Left */}
-      <div className="relative 
-          bg-[url(../assets/bg-stars.svg)]
-          bg-cover
-          border-r
-          border-white/10
-          flex
-          flex-col
-          items-start
-          overflow-hidden
-          justify-between
-          px-28
-          py-16"
-      >
-        {/* Blur */}
-        <div className="absolute 
-          right-0
-          top-1/2
-          h-[288px]
-          w-[526px]
-          -translate-y-1/2
-          translate-x-1/2
-          bg-purple-700
-          rounded-full
-          blur-full
-          opacity-50"
-        />
-
-        {/* Stripes */}
-        <div className="absolute
-          bottom-0
-          right-2
-          top-0
-          w-2
-          bg-stripes"
-        />
-
-        {/* Sig in */}
-        <a href="" className="flex items-center gap-3 text-left hover:text-gray-50 transition-colors">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400">
-            <User className='h-5 w-5 text-gray-500' />
-          </div>
-
-          <p className="text-sm leading-snug max-w-[140px]">
-            <span className="underline">Crie sua conta</span> e salve suas memórias!
-          </p>
-        </a>
-
-        {/* Hero */}
-        <div className='space-y-5'>
-          <Image src={nlwLogo} alt="NLW Spacetime" />
-
-          <div className='max-w-[428px] space-y-1'>
-            <h1 className='text-5xl font-bold leading-tight text-gray-50'>
-              Sua cápsula do tempo
-            </h1>
-            <p className='text-lg leading-relaxed'>
-              Colecione momentos marcantes da sua jornada e compartilhe (se
-              quiser) com o mundo!
+    <div className="flex flex-col gap-10 p-8">
+      {memories.map((memory) => {
+        return (
+          <div key={memory.id} className="space-y-4">
+            <time className="-ml-8 flex items-center gap-2 text-sm text-gray-100 before:h-px before:w-5 before:bg-gray-50">
+              {dayjs(memory.createdAt).format('D[ de ]MMMM[, ]YYYY')}
+            </time>
+            <Image
+              src={memory.coverUrl}
+              alt=""
+              width={592}
+              height={280}
+              className="aspect-video w-full rounded-lg object-cover"
+            />
+            <p className="text-lg leading-relaxed text-gray-100">
+              {memory.excerpt}
             </p>
+            <Link
+              href={`/memories/${memory.id}`}
+              className="flex items-center gap-2 text-sm text-gray-200 hover:text-gray-100"
+            >
+              Ler mais
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
-
-          <a
-            className='inline-block
-              rounded-full
-              bg-green-500
-              px-5
-              py-3
-              font-alt
-              text-sm
-              uppercase
-              leading-none
-              hover:bg-green-600
-              text-black'
-            href=""
-          >
-            CADASTRAR LEMBRANÇA
-          </a>
-        </div>
-
-        {/* Copyright */}
-        <div className='text-sm leading-relaxed text-gray-200'>
-          Feito com ❤️ no NLW da{' '}
-          <a className='underline text-gray-100'
-            href="https://rocketseat.com.br"
-            target="_blank"
-            rel='noreferrer'
-          >
-            Rocketseat
-          </a>
-        </div>
-      </div>
-
-      {/* Right */}
-      <div className="flex flex-col p-16 bg-[url(../assets/bg-stars.svg)] bg-cover">
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-center leading-relaxed w-[360px] ">
-            Você ainda não registrou nenhuma lembrança, comece a{' '}
-            <a href="" className="underline hover:text-gray-50">criar agora</a>
-          </p>
-        </div>
-      </div>
-    </main>
-  );
+        )
+      })}
+    </div>
+  )
 }
